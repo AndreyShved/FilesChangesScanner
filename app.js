@@ -20,13 +20,13 @@ function GetHashesRec(dirpath,hashes) {
         var fileName = arrayOfFileNames[i];
         try {
             if(fs.statSync(dirpath + "\\" + fileName).isDirectory()) {
-                console.log('"' + fileName + '" is directory!');
+                //console.log('"' + fileName + '" is directory!');
                 GetHashesRec(dirpath + "\\" + fileName, hashes);
             } else {
                 var fileFullPath = dirpath + "\\" + fileName;
                 var hash = GetHashOf(fileFullPath);
                 fileHashes[fileFullPath] = hash;
-                console.log(fileName + ': ' + hash);
+                //console.log(fileName + ': ' + hash);
             }
         } catch (e) {
             console.log(e.message);
@@ -71,6 +71,23 @@ function GetHashForSpecificDir(hashesObj,dirpath) {
     return scpecificHashes;
 }
 
+function UpdateHashes(oldHashes,newHashes,allHashes) {
+    for (var property in newHashes) {
+        if (newHashes.hasOwnProperty(property)) {
+            allHashes[property] = newHashes[property];
+        }
+    }
+    for (var property in oldHashes) {
+        if (oldHashes.hasOwnProperty(property)) {
+            if(typeof newHashes[property] === 'undefined') {
+                delete allHashes[property]; // File has been deleted
+            }
+        }
+    }
+
+    return allHashes;
+}
+
 var savedFileHashes = {};
 var fileHashes = {};
 
@@ -81,13 +98,18 @@ stdIO.question("Enter directory path: ", function(dirpath) {
     
     GetHashesRec(dirpath, fileHashes);
 
-    CompareHashes(GetHashForSpecificDir(savedFileHashes,dirpath),GetHashForSpecificDir(fileHashes,dirpath));
+    var oldHashes = GetHashForSpecificDir(savedFileHashes,dirpath);
+    var newHashes = fileHashes;
+
+    CompareHashes(oldHashes,newHashes);
+
+    fileHashes = UpdateHashes(oldHashes,newHashes,savedFileHashes);
 
     fs.writeFile(HASHES_FILE, JSON.stringify(fileHashes), function(err) {
         if(err) {
             return console.log(err);
         }
-        console.log("The file was saved!");
+        console.log("Scan results has been saved!");
     }); 
 
     stdIO.close();
