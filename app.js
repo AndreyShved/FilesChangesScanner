@@ -4,7 +4,6 @@ const crypto = require('crypto');
 
 const HASHES_FILE = "hashes.data";
 
-
 function GetHashOf(filePathArg) {
     var data = fs.readFileSync(filePathArg);
     var hash = crypto.createHash('sha256');
@@ -39,6 +38,39 @@ function ReadHashesFromFile(filePath) {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
+function CompareHashes(oldHashes,newHashes) {
+    for (var property in newHashes) {
+        if (newHashes.hasOwnProperty(property)) {
+            if(typeof oldHashes[property] !== 'undefined') {
+                if(oldHashes[property]!=newHashes[property]) {
+                    console.log(' File has been CHANGED: ' + property);
+                }
+            } else {
+                console.log(' New file DISCOVERED: ' + property);
+            }
+        }
+    }
+    for (var property in oldHashes) {
+        if (oldHashes.hasOwnProperty(property)) {
+            if(typeof newHashes[property] === 'undefined') {
+                console.log(' File has been DELETED: ' + property);
+            }
+        }
+    }
+}
+
+function GetHashForSpecificDir(hashesObj,dirpath) {
+    var scpecificHashes = {};
+    for (var property in hashesObj) {
+        if (hashesObj.hasOwnProperty(property)) {
+            if(property.indexOf(dirpath) !== -1) {
+                scpecificHashes[property] = hashesObj[property];
+            }
+        }
+    }
+    return scpecificHashes;
+}
+
 var savedFileHashes = {};
 var fileHashes = {};
 
@@ -46,9 +78,10 @@ var fileHashes = {};
 var stdIO = rl.createInterface(process.stdin, process.stdout); 
 stdIO.question("Enter directory path: ", function(dirpath) {
     savedFileHashes = ReadHashesFromFile(HASHES_FILE);
-    console.log(savedFileHashes);
+    
     GetHashesRec(dirpath, fileHashes);
-    console.log(fileHashes);
+
+    CompareHashes(GetHashForSpecificDir(savedFileHashes,dirpath),GetHashForSpecificDir(fileHashes,dirpath));
 
     fs.writeFile(HASHES_FILE, JSON.stringify(fileHashes), function(err) {
         if(err) {
