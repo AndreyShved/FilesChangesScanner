@@ -1,6 +1,9 @@
-var fs = require("fs"); 
-var rl = require("readline");
-var crypto = require('crypto');
+const fs = require("fs"); 
+const rl = require("readline");
+const crypto = require('crypto');
+
+const HASHES_FILE = "hashes.data";
+
 
 function GetHashOf(filePathArg) {
     var data = fs.readFileSync(filePathArg);
@@ -32,14 +35,22 @@ function GetHashesRec(dirpath,hashes) {
     }
 }
 
+function ReadHashesFromFile(filePath) {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+var savedFileHashes = {};
 var fileHashes = {};
+
 
 var stdIO = rl.createInterface(process.stdin, process.stdout); 
 stdIO.question("Enter directory path: ", function(dirpath) {
+    savedFileHashes = ReadHashesFromFile(HASHES_FILE);
+    console.log(savedFileHashes);
     GetHashesRec(dirpath, fileHashes);
     console.log(fileHashes);
 
-    fs.writeFile("hashes.data", JSON.stringify(fileHashes), function(err) {
+    fs.writeFile(HASHES_FILE, JSON.stringify(fileHashes), function(err) {
         if(err) {
             return console.log(err);
         }
